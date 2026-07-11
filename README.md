@@ -7,8 +7,6 @@
 - `styles.css`
 - `data.js`
 - `app.js`
-- `itinerary.md`
-- `google_maps_categories.md`
 
 如果 GitHub Pages 來源設定為 repository root，請上傳「此資料夾內的檔案」到 repo 根目錄，不是把 `github-pages` 整個資料夾上傳到根目錄。
 

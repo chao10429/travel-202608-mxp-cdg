@@ -23,7 +23,16 @@ const els = {
   mapFrame: document.querySelector("#mapFrame"),
   mapTitle: document.querySelector("#mapTitle"),
   mapSubtitle: document.querySelector("#mapSubtitle"),
-  mapExternalLink: document.querySelector("#mapExternalLink")
+  mapExternalLink: document.querySelector("#mapExternalLink"),
+  mobileMapBar: document.querySelector("#mobileMapBar"),
+  mobileMapContext: document.querySelector("#mobileMapContext"),
+  mobileMapTitle: document.querySelector("#mobileMapTitle"),
+  mobileMapLink: document.querySelector("#mobileMapLink"),
+  mobileMapPreviewToggle: document.querySelector("#mobileMapPreviewToggle"),
+  mobileMapPreview: document.querySelector("#mobileMapPreview"),
+  mobileMapPreviewClose: document.querySelector("#mobileMapPreviewClose"),
+  mobilePreviewTitle: document.querySelector("#mobilePreviewTitle"),
+  mobileMapFrame: document.querySelector("#mobileMapFrame")
 };
 
 function googleSearchUrl(query) {
@@ -35,98 +44,35 @@ function googleEmbedUrl(query) {
 }
 
 function focusMap(title, query, subtitle = "") {
+  const searchUrl = googleSearchUrl(query);
+  const embedUrl = googleEmbedUrl(query);
+
   els.mapTitle.textContent = title;
   els.mapSubtitle.textContent = subtitle || query;
-  els.mapFrame.src = googleEmbedUrl(query);
-  els.mapExternalLink.href = googleSearchUrl(query);
+  els.mapFrame.src = embedUrl;
+  els.mapExternalLink.href = searchUrl;
+
+  els.mobileMapBar.hidden = false;
+  els.mobileMapContext.textContent = subtitle || "地圖參考";
+  els.mobileMapTitle.textContent = title;
+  els.mobileMapLink.href = searchUrl;
+  els.mobilePreviewTitle.textContent = title;
+  els.mobileMapFrame.src = embedUrl;
 }
 
-function parseItinerary(markdown) {
-  const start = markdown.indexOf("## 逐日行程");
-  const end = markdown.indexOf("## 米其林三星");
-  const body = markdown.slice(start, end > -1 ? end : markdown.length);
-  const chunks = body.split(/\n### /).slice(1);
-
-  return chunks.map((chunk) => {
-    const lines = chunk.trim().split("\n");
-    const title = lines.shift().trim();
-    const guide = ITINERARY_GUIDE[title];
-    if (guide) {
-      return {
-        title,
-        headline: guide.headline,
-        overview: guide.overview,
-        notes: guide.notes,
-        stops: guide.links
-      };
-    }
-
-    return {
-      title,
-      headline: title.replace(/^([^｜]+)｜?/, "").trim() || title,
-      overview: [],
-      notes: [],
-      stops: ITINERARY_STOPS[title] || []
-    };
-  });
-}
-
-function parsePlaces(markdown) {
-  const rows = [];
-  let category = "";
-
-  markdown.split("\n").forEach((line) => {
-    if (line.startsWith("## ")) {
-      category = line.replace("## ", "").trim();
-      return;
-    }
-    if (!line.startsWith("- ") || !CATEGORY_ORDER.includes(category)) {
-      return;
-    }
-
-    const raw = line.slice(2);
-    const [namePart, typePart = "", pricePart = "", notePart = ""] = raw.split(" | ");
-    const name = namePart.replaceAll("\\|", "|").replaceAll("\\u0026", "&");
-    const type = typePart.replace("類型：", "").trim() || "待補";
-    const price = pricePart.replace("Google 價格：", "").trim() || "待補";
-    const note = notePart.replace("備註：", "").trim();
-    const city = CITY_LOOKUP[name] || "巴黎";
-    const query = note ? `${name} ${note}` : `${name} ${city}`;
-    const district = DISTRICT_LOOKUP[name] || inferParisDistrict(note);
-    const normalizedType = type.replaceAll("\\u0026", "&");
-
-    rows.push({
-      name,
-      city,
-      category,
-      type: normalizedType,
-      displayType: formatTypeLabel(normalizedType),
-      price,
-      note: note.replaceAll("\\u0026", "&"),
-      district,
-      displayDistrict: formatDistrictLabel(district),
-      query,
-      summary: ""
-    });
-  });
-
-  return rows;
-}
-
-function inferParisDistrict(note) {
-  const postal = note.match(/75(\d{3})/);
-  if (postal) {
-    const districtNumber = Number(postal[1]);
-    if (districtNumber >= 1 && districtNumber <= 20) {
-      return `${districtNumber}區`;
-    }
-  }
-
-  return "未分區";
+function setMobileMapPreview(open) {
+  els.mobileMapPreview.hidden = !open;
+  els.mobileMapPreviewToggle.setAttribute("aria-expanded", String(open));
+  els.mobileMapPreviewToggle.textContent = open ? "收合" : "預覽";
 }
 
 function districtSortValue(label) {
   if (label === "全部") return -1;
+
+  const milanIndex = MILAN_DISTRICT_ORDER.indexOf(label);
+  if (milanIndex > -1) {
+    return 30 + milanIndex;
+  }
 
   const match = label.match(/^(\d{1,2})區$/);
   if (match) {
@@ -157,89 +103,33 @@ function typeSortValue(type) {
   return 50;
 }
 
-function pickDistrictLead(district) {
-  if (/^\d{1,2}區$/.test(district)) {
-    return `巴黎${district}的`;
-  }
-  if (district.startsWith("近郊")) {
-    return "巴黎近郊的";
-  }
-  return "巴黎的";
+function categorySortValue(category) {
+  const index = CATEGORY_ORDER.indexOf(category);
+  return index === -1 ? 99 : index;
 }
 
-function normalizeTypeLabel(type) {
-  return type.replace("/早午餐", "").replace("/小酒館", "").replace("/酒館", "").trim();
-}
-
-function createPlaceSummary(place) {
-  if (PLACE_SUMMARY_OVERRIDES[place.name]) {
-    return PLACE_SUMMARY_OVERRIDES[place.name];
-  }
-
-  const lead = pickDistrictLead(place.district);
-  const type = normalizeTypeLabel(place.type);
-
-  if (place.category === "早午餐") {
-    if (type.includes("麵包")) return `${lead}${type}選項，適合排進早晨路線，現場吃或外帶都方便。`;
-    if (type.includes("甜點")) return `${lead}${type}店，適合安排早餐後順吃，或當成散步中的甜點停靠點。`;
-    if (type.includes("咖啡")) return `${lead}${type}店，適合早上坐下慢慢吃，也能和附近散步行程一起安排。`;
-    return `${lead}${type || "早午餐"}店，適合當成一天開始的第一站。`;
-  }
-
-  if (place.category === "午晚餐") {
-    if (type.includes("法式")) return `${lead}${type}餐廳，適合排成一頓完整正餐，感受比較典型的巴黎用餐節奏。`;
-    if (type.includes("義式")) return `${lead}${type}餐廳，適合在市區行程中安排一頓氣氛感比較強的午晚餐。`;
-    if (/(中式|越式|日式|韓式|泰式|台式|川味|拉麵)/.test(type)) return `${lead}${type}選項，適合在巴黎行程中換個口味吃得更熟悉一點。`;
-    if (/(市集|熟食|食材)/.test(type)) return `${lead}${type}型地點，適合邊逛邊吃，或買些東西當行程中的補給。`;
-    if (type.includes("酒吧")) return `${lead}${type}空間，適合正餐後續攤，或晚一點來小坐一下。`;
-    return `${lead}${type || "正餐"}選項，適合安排在附近主要行程前後當一頓完整用餐。`;
-  }
-
-  if (place.category === "咖啡") {
-    if (type.includes("精品")) return `${lead}${type}，適合行程中穿插休息，也很適合外帶一杯邊走邊逛。`;
-    if (type.includes("經典")) return `${lead}${type}，重點不只在咖啡，也在整體老巴黎氛圍與停留感。`;
-    return `${lead}${type || "咖啡館"}，適合在景點與景點之間坐下休息一下。`;
-  }
-
-  if (place.category === "飲料") {
-    return `${lead}${type || "飲料"}選項，適合逛街途中順手補一杯，或當餐後小休息。`;
-  }
-
-  if (place.category === "酒吧") {
-    if (type.includes("葡萄酒")) return `${lead}${type}，適合晚上慢慢喝一杯，也很適合當成晚餐後的第二站。`;
-    return `${lead}${type || "酒吧"}，適合夜間小坐，或在附近行程結束後延伸安排。`;
-  }
-
-  if (place.category === "景點") {
-    if (type.includes("美術館")) return `${lead}${type}，適合保留 1 至 2 小時慢慢看，建築與館藏通常都值得停留。`;
-    if (type.includes("博物館")) return `${lead}${type}，適合搭配附近街區一起安排，讓行程多一點室內深度。`;
-    if (type.includes("教堂")) return `${lead}${type}，重點通常在空間氛圍與建築細節，適合順路進去看看。`;
-    if (type.includes("公園") || type.includes("花園")) return `${lead}${type}，很適合留一段散步或休息時間，不一定要排得很趕。`;
-    if (type.includes("廣場")) return `${lead}${type}，適合當散步節點、拍照點，或與周邊景點連成一路。`;
-    if (type.includes("地標")) return `${lead}${type}，屬於來巴黎很容易排進去的經典代表點。`;
-    if (type.includes("歷史")) return `${lead}${type}，適合喜歡法國歷史脈絡的人安排進主要路線中。`;
-    if (type.includes("圖書館")) return `${lead}${type}，重點常在空間與館內細節，適合當作靜態景點穿插。`;
-    if (type.includes("表演")) return `${lead}${type}，適合安排成夜間節目，和白天觀光做出節奏差異。`;
-    if (type.includes("住宿")) return `${lead}${type}，位置主要影響你每天移動節奏，適合當作附近行程的出發或收尾點。`;
-    return `${lead}${type || "景點"}，適合與同區行程一起安排，當成順路停留的重點點位。`;
-  }
-
-  if (place.category === "購物") {
-    if (type.includes("百貨")) return `${lead}${type}，適合集中採買，也能順便安排建築或頂樓景觀。`;
-    if (type.includes("香氛")) return `${lead}${type}店，適合慢慢試聞與挑選，通常比一般購物點更需要留點時間。`;
-    if (type.includes("服飾") || type.includes("選物")) return `${lead}${type}店，適合排在散步購物路線中，順著街區慢慢逛。`;
-    return `${lead}${type || "購物"}地點，適合放進同區的逛街路線一起安排。`;
-  }
-
-  return `${lead}${type || place.category}地點，適合與附近行程一起安排。`;
+function comparePlaces(a, b) {
+  return (
+    citySortValue(a.city) - citySortValue(b.city) ||
+    a.city.localeCompare(b.city, "zh-Hant") ||
+    districtSortValue(a.district) - districtSortValue(b.district) ||
+    a.district.localeCompare(b.district, "zh-Hant") ||
+    categorySortValue(a.category) - categorySortValue(b.category) ||
+    typeSortValue(a.displayType) - typeSortValue(b.displayType) ||
+    a.displayType.localeCompare(b.displayType, "zh-Hant") ||
+    a.originalIndex - b.originalIndex
+  );
 }
 
 function linkStops(text, stops) {
   const placeholders = [];
-  const sortedStops = [...stops].sort((a, b) => b[0].length - a[0].length);
+  const normalizedStops = stops.map((stop) =>
+    Array.isArray(stop) ? { label: stop[0], query: stop[1] } : stop
+  );
+  const sortedStops = normalizedStops.sort((a, b) => b.label.length - a.label.length);
   let linked = text;
 
-  sortedStops.forEach(([label, query], index) => {
+  sortedStops.forEach(({ label, query }, index) => {
     const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const pattern = new RegExp(escaped, "g");
     const token = `__MAP_LINK_${index}__`;
@@ -436,7 +326,7 @@ function renderPlaces() {
     const haystack = `${place.name} ${place.city} ${place.type} ${place.displayType} ${place.displayDistrict} ${place.note} ${place.summary}`.toLowerCase();
     const matchSearch = !needle || haystack.includes(needle);
     return matchCity && matchCategory && matchType && matchDistrict && matchSearch;
-  });
+  }).sort(comparePlaces);
 
   if (!places.length) {
     els.placeList.innerHTML = `<p class="empty">沒有符合條件的地點。</p>`;
@@ -488,21 +378,32 @@ function wireTabs() {
   });
 }
 
+function wireMobileMap() {
+  els.mobileMapPreviewToggle.addEventListener("click", () => {
+    setMobileMapPreview(els.mobileMapPreview.hidden);
+  });
+  els.mobileMapPreviewClose.addEventListener("click", () => {
+    setMobileMapPreview(false);
+  });
+}
+
 async function init() {
   wireTabs();
+  wireMobileMap();
   els.placeSearch.addEventListener("input", (event) => {
     state.search = event.target.value;
     renderPlaces();
   });
 
-  const [itineraryMd, categoriesMd] = await Promise.all([
-    fetchTextFile(["itinerary.md"]),
-    fetchTextFile(["google_maps_categories.md"])
-  ]);
-
-  state.places = parsePlaces(categoriesMd);
-  state.places = state.places.map((place) => ({ ...place, summary: createPlaceSummary(place) }));
-  renderItinerary(parseItinerary(itineraryMd));
+  state.places = PLACES.map((place, index) => ({
+    ...place,
+    originalIndex: place.originalIndex ?? index,
+    displayType: place.displayType || formatTypeLabel(place.type),
+    displayDistrict: place.displayDistrict || formatDistrictLabel(place.district),
+    query: place.query || (place.note ? `${place.name} ${place.note}` : `${place.name} ${place.city}`),
+    summary: place.summary || ""
+  }));
+  renderItinerary(ITINERARY_DAYS);
   renderFilters();
   renderPlaces();
 }

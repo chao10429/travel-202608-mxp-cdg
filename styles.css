@@ -400,6 +400,11 @@ iframe {
   text-decoration: none;
 }
 
+.mobile-map-bar,
+.mobile-map-preview {
+  display: none;
+}
+
 .empty {
   border: 1px dashed var(--line);
   border-radius: 8px;
@@ -426,10 +431,128 @@ iframe {
   .map-panel {
     position: static;
     order: 2;
+    display: none;
   }
 
   iframe {
     min-height: 310px;
+  }
+
+  body {
+    padding-bottom: 96px;
+  }
+
+  .mobile-map-bar {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid rgba(85, 112, 94, 0.26);
+    border-radius: 18px;
+    padding: 12px;
+    background: rgba(251, 248, 241, 0.94);
+    box-shadow: 0 14px 32px rgba(43, 37, 29, 0.18);
+    backdrop-filter: blur(14px);
+  }
+
+  .mobile-map-bar[hidden] {
+    display: none;
+  }
+
+  .mobile-map-copy {
+    min-width: 0;
+  }
+
+  .mobile-map-copy p {
+    margin: 0 0 3px;
+    color: var(--muted);
+    font-size: 0.76rem;
+    line-height: 1.2;
+  }
+
+  .mobile-map-copy strong {
+    display: block;
+    overflow: hidden;
+    color: var(--ink);
+    font-size: 0.98rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-map-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mobile-map-primary,
+  .mobile-map-secondary,
+  .mobile-map-close {
+    min-height: 40px;
+    border-radius: 999px;
+    padding: 9px 12px;
+    font-weight: 700;
+  }
+
+  .mobile-map-primary {
+    color: var(--white);
+    background: var(--sage);
+    text-decoration: none;
+  }
+
+  .mobile-map-secondary,
+  .mobile-map-close {
+    border: 1px solid var(--line);
+    color: var(--sage);
+    background: var(--cream);
+  }
+
+  .mobile-map-preview {
+    position: fixed;
+    inset: auto 12px 88px;
+    z-index: 19;
+    display: block;
+  }
+
+  .mobile-map-preview[hidden] {
+    display: none;
+  }
+
+  .mobile-map-preview-card {
+    display: grid;
+    gap: 12px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 12px;
+    background: rgba(251, 248, 241, 0.96);
+    box-shadow: var(--shadow);
+  }
+
+  .mobile-map-preview-header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mobile-map-preview-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .mobile-map-close {
+    min-width: 40px;
+    padding: 0;
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  #mobileMapFrame {
+    min-height: min(52vh, 360px);
   }
 }
 

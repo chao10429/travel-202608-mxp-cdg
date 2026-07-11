@@ -45,7 +45,7 @@
               <p class="eyebrow">Saved Places</p>
               <h2 id="placesTitle">儲存地點</h2>
             </div>
-            <p class="hint">分類來自 Google Maps 清單整理檔。</p>
+            <p class="hint">資料來自結構化地點清單。</p>
           </div>
           <div class="tools">
             <label class="search-box">
@@ -86,7 +86,37 @@
       </aside>
     </main>
 
-    <script src="data.js?v=20260711p"></script>
-    <script src="app.js?v=20260711p"></script>
+    <section id="mobileMapBar" class="mobile-map-bar" aria-live="polite" hidden>
+      <div class="mobile-map-copy">
+        <p id="mobileMapContext">地圖參考</p>
+        <strong id="mobileMapTitle">Paris</strong>
+      </div>
+      <div class="mobile-map-actions">
+        <a id="mobileMapLink" class="mobile-map-primary" href="https://www.google.com/maps/search/?api=1&query=Paris%2C%20France" target="_blank" rel="noreferrer">Google Maps</a>
+        <button id="mobileMapPreviewToggle" class="mobile-map-secondary" type="button" aria-expanded="false" aria-controls="mobileMapPreview">預覽</button>
+      </div>
+    </section>
+
+    <section id="mobileMapPreview" class="mobile-map-preview" hidden>
+      <div class="mobile-map-preview-card">
+        <div class="mobile-map-preview-header">
+          <div>
+            <p class="eyebrow">Map Preview</p>
+            <h2 id="mobilePreviewTitle">Paris</h2>
+          </div>
+          <button id="mobileMapPreviewClose" class="mobile-map-close" type="button" aria-label="關閉地圖預覽">×</button>
+        </div>
+        <iframe
+          id="mobileMapFrame"
+          title="Mobile Google Map reference"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.google.com/maps?q=Paris%2C%20France&output=embed"
+        ></iframe>
+      </div>
+    </section>
+
+    <script src="data.js?v=20260712b"></script>
+    <script src="app.js?v=20260712b"></script>
   </body>
 </html>
