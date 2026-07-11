@@ -265,8 +265,8 @@ async function init() {
   });
 
   const [itineraryMd, categoriesMd] = await Promise.all([
-    fetch("itinerary.md").then((response) => response.text()),
-    fetch("google_maps_categories.md").then((response) => response.text())
+    fetchTextFile(["itinerary.txt", "itinerary.md"]),
+    fetchTextFile(["google_maps_categories.txt", "google_maps_categories.md"])
   ]);
 
   state.places = parsePlaces(categoriesMd);
@@ -275,7 +275,18 @@ async function init() {
   renderPlaces();
 }
 
+async function fetchTextFile(candidates) {
+  for (const path of candidates) {
+    const response = await fetch(path);
+    if (response.ok) {
+      return response.text();
+    }
+  }
+
+  throw new Error(`Unable to load any of: ${candidates.join(", ")}`);
+}
+
 init().catch((error) => {
   console.error(error);
-  els.itineraryList.innerHTML = `<p class="empty">網站資料讀取失敗，請確認是透過本機伺服器開啟。</p>`;
+  els.itineraryList.innerHTML = `<p class="empty">網站資料讀取失敗，請確認行程與清單資料檔已一併上傳。</p>`;
 });
