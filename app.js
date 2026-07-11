@@ -1,74 +1,11 @@
-const CATEGORY_ORDER = ["早午餐", "午晚餐", "咖啡", "飲料", "酒吧", "景點", "購物"];
-
-const ITINERARY_STOPS = {
-  "8/9（日）抵達米蘭｜大教堂與市中心": [
-    ["NYX Hotel Milan", "NYX Hotel Milan, Milan"],
-    ["Brera", "Brera, Milan"],
-    ["Maccheroni", "Maccheroni La Carbonara N°1 di Milano"],
-    ["米蘭大教堂", "Duomo di Milano"],
-    ["Navigli", "Navigli, Milan"]
-  ],
-  "8/10（一）科莫湖一日遊｜Como＋Bellagio＋Varenna": [
-    ["Como", "Como, Italy"],
-    ["Bellagio", "Bellagio, Lake Como"],
-    ["Varenna", "Varenna, Italy"],
-    ["Osteria Serafina", "Osteria Serafina Milano"]
-  ],
-  "8/11（二）維洛納一日遊": [
-    ["Verona Arena", "Verona Arena"],
-    ["茱麗葉之家", "Casa di Giulietta Verona"],
-    ["Ponte Pietra", "Ponte Pietra Verona"],
-    ["Castel San Pietro", "Castel San Pietro Verona"]
-  ],
-  "8/12（三）米蘭新城區｜搭車前往巴黎": [
-    ["BAM", "Biblioteca degli Alberi Milano"],
-    ["Ratanà", "Ristorante Ratanà Milano"],
-    ["Paris Gare de Lyon", "Paris Gare de Lyon"],
-    ["Hôtel Magenta 38", "Hôtel Magenta 38 Paris"]
-  ],
-  "8/13（四）飯店周邊早餐｜聖馬丁運河｜蒙馬特｜Pink Mamma｜聖心堂日落": [
-    ["Mamiche", "Mamiche Paris"],
-    ["Liberté", "Liberté Paris"],
-    ["Du Pain et des Idées", "Du Pain et des Idées Paris"],
-    ["聖馬丁運河", "Canal Saint-Martin Paris"],
-    ["Pink Mamma", "Pink Mamma Paris"],
-    ["愛牆", "Le Mur des Je t'aime Paris"],
-    ["聖心堂", "Sacré-Cœur Paris"]
-  ],
-  "8/14（五）瑪黑區早餐｜Merci 周邊｜皮諾美術館｜PHO 14 Opéra｜小皇宮｜팔도_PALDO": [
-    ["Petite Île", "Petite Île Boulangerie Paris"],
-    ["Merci", "Merci 111 Boulevard Beaumarchais Paris"],
-    ["皮諾美術館", "Bourse de Commerce Pinault Collection Paris"],
-    ["PHO 14 Opéra", "Phở Bánh Cuốn 14 Opéra Paris"],
-    ["小皇宮", "Petit Palais Paris"],
-    ["팔도_PALDO", "팔도_PALDO Paris"]
-  ],
-  "8/15（六，法國國定假日）瑪黑區｜街區散步與彈性購物": [
-    ["Place des Vosges", "Place des Vosges Paris"],
-    ["Village Saint-Paul", "Village Saint-Paul Paris"],
-    ["Rue des Rosiers", "Rue des Rosiers Paris"],
-    ["Musée Carnavalet", "Musée Carnavalet Paris"]
-  ],
-  "8/16（日）奧塞博物館｜巴黎鐵塔": [
-    ["奧塞博物館", "Musée d'Orsay Paris"],
-    ["Saint-Germain-des-Prés", "Saint-Germain-des-Prés Paris"],
-    ["Rue Cler", "Rue Cler Paris"],
-    ["艾菲爾鐵塔", "Eiffel Tower Paris"]
-  ],
-  "8/17（一）巴黎軍事博物館｜塞納河遊船": [
-    ["巴黎軍事博物館", "Musée de l'Armée Paris"],
-    ["Rue Cler", "Rue Cler Paris"],
-    ["Bateaux Parisiens", "Bateaux Parisiens Eiffel Tower"]
-  ],
-  "8/18（二）巴黎返台": [
-    ["Hôtel Magenta 38", "Hôtel Magenta 38 Paris"],
-    ["CDG Terminal 1", "Charles de Gaulle Airport Terminal 1"]
-  ]
-};
+// Static trip data is loaded from data.js before this file.
 
 const state = {
   places: [],
-  category: "全部",
+  cities: [],
+  categories: [],
+  types: [],
+  districts: [],
   search: ""
 };
 
@@ -77,7 +14,10 @@ const els = {
   itineraryView: document.querySelector("#itineraryView"),
   placesView: document.querySelector("#placesView"),
   itineraryList: document.querySelector("#itineraryList"),
+  cityFilters: document.querySelector("#cityFilters"),
   categoryFilters: document.querySelector("#categoryFilters"),
+  typeFilters: document.querySelector("#typeFilters"),
+  districtFilters: document.querySelector("#districtFilters"),
   placeSearch: document.querySelector("#placeSearch"),
   placeList: document.querySelector("#placeList"),
   mapFrame: document.querySelector("#mapFrame"),
@@ -110,11 +50,24 @@ function parseItinerary(markdown) {
   return chunks.map((chunk) => {
     const lines = chunk.trim().split("\n");
     const title = lines.shift().trim();
-    const summary = lines
-      .filter((line) => line.startsWith("- ") || line.startsWith("  - "))
-      .slice(0, 12)
-      .map((line) => line.replace(/^ {0,2}- /, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"));
-    return { title, summary, stops: ITINERARY_STOPS[title] || [] };
+    const guide = ITINERARY_GUIDE[title];
+    if (guide) {
+      return {
+        title,
+        headline: guide.headline,
+        overview: guide.overview,
+        notes: guide.notes,
+        stops: guide.links
+      };
+    }
+
+    return {
+      title,
+      headline: title.replace(/^([^｜]+)｜?/, "").trim() || title,
+      overview: [],
+      notes: [],
+      stops: ITINERARY_STOPS[title] || []
+    };
   });
 }
 
@@ -133,56 +86,206 @@ function parsePlaces(markdown) {
 
     const raw = line.slice(2);
     const [namePart, typePart = "", pricePart = "", notePart = ""] = raw.split(" | ");
+    const name = namePart.replaceAll("\\|", "|").replaceAll("\\u0026", "&");
     const type = typePart.replace("類型：", "").trim() || "待補";
     const price = pricePart.replace("Google 價格：", "").trim() || "待補";
     const note = notePart.replace("備註：", "").trim();
-    const query = note ? `${namePart} ${note}` : `${namePart} Paris`;
+    const city = CITY_LOOKUP[name] || "巴黎";
+    const query = note ? `${name} ${note}` : `${name} ${city}`;
+    const district = DISTRICT_LOOKUP[name] || inferParisDistrict(note);
+    const normalizedType = type.replaceAll("\\u0026", "&");
 
     rows.push({
-      name: namePart.replaceAll("\\|", "|").replaceAll("\\u0026", "&"),
+      name,
+      city,
       category,
-      type: type.replaceAll("\\u0026", "&"),
+      type: normalizedType,
+      displayType: formatTypeLabel(normalizedType),
       price,
       note: note.replaceAll("\\u0026", "&"),
-      query
+      district,
+      displayDistrict: formatDistrictLabel(district),
+      query,
+      summary: ""
     });
   });
 
   return rows;
 }
 
+function inferParisDistrict(note) {
+  const postal = note.match(/75(\d{3})/);
+  if (postal) {
+    const districtNumber = Number(postal[1]);
+    if (districtNumber >= 1 && districtNumber <= 20) {
+      return `${districtNumber}區`;
+    }
+  }
+
+  return "未分區";
+}
+
+function districtSortValue(label) {
+  if (label === "全部") return -1;
+
+  const match = label.match(/^(\d{1,2})區$/);
+  if (match) {
+    return Number(match[1]);
+  }
+
+  if (label.startsWith("近郊")) return 98;
+  if (label === "未分區") return 99;
+  return 97;
+}
+
+function citySortValue(city) {
+  const index = CITY_ORDER.indexOf(city);
+  return index === -1 ? 99 : index;
+}
+
+function formatDistrictLabel(district) {
+  return district;
+}
+
+function formatTypeLabel(type) {
+  return type.replace("早午餐/咖啡", "咖啡").replace("/早午餐", "").trim();
+}
+
+function typeSortValue(type) {
+  if (type === "全部") return -1;
+  if (type === "待補") return 99;
+  return 50;
+}
+
+function pickDistrictLead(district) {
+  if (/^\d{1,2}區$/.test(district)) {
+    return `巴黎${district}的`;
+  }
+  if (district.startsWith("近郊")) {
+    return "巴黎近郊的";
+  }
+  return "巴黎的";
+}
+
+function normalizeTypeLabel(type) {
+  return type.replace("/早午餐", "").replace("/小酒館", "").replace("/酒館", "").trim();
+}
+
+function createPlaceSummary(place) {
+  if (PLACE_SUMMARY_OVERRIDES[place.name]) {
+    return PLACE_SUMMARY_OVERRIDES[place.name];
+  }
+
+  const lead = pickDistrictLead(place.district);
+  const type = normalizeTypeLabel(place.type);
+
+  if (place.category === "早午餐") {
+    if (type.includes("麵包")) return `${lead}${type}選項，適合排進早晨路線，現場吃或外帶都方便。`;
+    if (type.includes("甜點")) return `${lead}${type}店，適合安排早餐後順吃，或當成散步中的甜點停靠點。`;
+    if (type.includes("咖啡")) return `${lead}${type}店，適合早上坐下慢慢吃，也能和附近散步行程一起安排。`;
+    return `${lead}${type || "早午餐"}店，適合當成一天開始的第一站。`;
+  }
+
+  if (place.category === "午晚餐") {
+    if (type.includes("法式")) return `${lead}${type}餐廳，適合排成一頓完整正餐，感受比較典型的巴黎用餐節奏。`;
+    if (type.includes("義式")) return `${lead}${type}餐廳，適合在市區行程中安排一頓氣氛感比較強的午晚餐。`;
+    if (/(中式|越式|日式|韓式|泰式|台式|川味|拉麵)/.test(type)) return `${lead}${type}選項，適合在巴黎行程中換個口味吃得更熟悉一點。`;
+    if (/(市集|熟食|食材)/.test(type)) return `${lead}${type}型地點，適合邊逛邊吃，或買些東西當行程中的補給。`;
+    if (type.includes("酒吧")) return `${lead}${type}空間，適合正餐後續攤，或晚一點來小坐一下。`;
+    return `${lead}${type || "正餐"}選項，適合安排在附近主要行程前後當一頓完整用餐。`;
+  }
+
+  if (place.category === "咖啡") {
+    if (type.includes("精品")) return `${lead}${type}，適合行程中穿插休息，也很適合外帶一杯邊走邊逛。`;
+    if (type.includes("經典")) return `${lead}${type}，重點不只在咖啡，也在整體老巴黎氛圍與停留感。`;
+    return `${lead}${type || "咖啡館"}，適合在景點與景點之間坐下休息一下。`;
+  }
+
+  if (place.category === "飲料") {
+    return `${lead}${type || "飲料"}選項，適合逛街途中順手補一杯，或當餐後小休息。`;
+  }
+
+  if (place.category === "酒吧") {
+    if (type.includes("葡萄酒")) return `${lead}${type}，適合晚上慢慢喝一杯，也很適合當成晚餐後的第二站。`;
+    return `${lead}${type || "酒吧"}，適合夜間小坐，或在附近行程結束後延伸安排。`;
+  }
+
+  if (place.category === "景點") {
+    if (type.includes("美術館")) return `${lead}${type}，適合保留 1 至 2 小時慢慢看，建築與館藏通常都值得停留。`;
+    if (type.includes("博物館")) return `${lead}${type}，適合搭配附近街區一起安排，讓行程多一點室內深度。`;
+    if (type.includes("教堂")) return `${lead}${type}，重點通常在空間氛圍與建築細節，適合順路進去看看。`;
+    if (type.includes("公園") || type.includes("花園")) return `${lead}${type}，很適合留一段散步或休息時間，不一定要排得很趕。`;
+    if (type.includes("廣場")) return `${lead}${type}，適合當散步節點、拍照點，或與周邊景點連成一路。`;
+    if (type.includes("地標")) return `${lead}${type}，屬於來巴黎很容易排進去的經典代表點。`;
+    if (type.includes("歷史")) return `${lead}${type}，適合喜歡法國歷史脈絡的人安排進主要路線中。`;
+    if (type.includes("圖書館")) return `${lead}${type}，重點常在空間與館內細節，適合當作靜態景點穿插。`;
+    if (type.includes("表演")) return `${lead}${type}，適合安排成夜間節目，和白天觀光做出節奏差異。`;
+    if (type.includes("住宿")) return `${lead}${type}，位置主要影響你每天移動節奏，適合當作附近行程的出發或收尾點。`;
+    return `${lead}${type || "景點"}，適合與同區行程一起安排，當成順路停留的重點點位。`;
+  }
+
+  if (place.category === "購物") {
+    if (type.includes("百貨")) return `${lead}${type}，適合集中採買，也能順便安排建築或頂樓景觀。`;
+    if (type.includes("香氛")) return `${lead}${type}店，適合慢慢試聞與挑選，通常比一般購物點更需要留點時間。`;
+    if (type.includes("服飾") || type.includes("選物")) return `${lead}${type}店，適合排在散步購物路線中，順著街區慢慢逛。`;
+    return `${lead}${type || "購物"}地點，適合放進同區的逛街路線一起安排。`;
+  }
+
+  return `${lead}${type || place.category}地點，適合與附近行程一起安排。`;
+}
+
+function linkStops(text, stops) {
+  const placeholders = [];
+  const sortedStops = [...stops].sort((a, b) => b[0].length - a[0].length);
+  let linked = text;
+
+  sortedStops.forEach(([label, query], index) => {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(escaped, "g");
+    const token = `__MAP_LINK_${index}__`;
+
+    placeholders.push({
+      token,
+      html: `<button class="inline-map-link" type="button" data-title="${label}" data-query="${query}">${label}</button>`
+    });
+
+    linked = linked.replace(pattern, token);
+  });
+
+  placeholders.forEach(({ token, html }) => {
+    linked = linked.replaceAll(token, html);
+  });
+
+  return linked;
+}
+
 function renderItinerary(days) {
   els.itineraryList.innerHTML = days
     .map((day) => {
-      const dateMatch = day.title.match(/^([^｜]+)/);
-      const date = dateMatch ? dateMatch[1] : day.title;
-      const title = day.title.replace(/^([^｜]+)｜?/, "").trim() || day.title;
-      const summary = day.summary.map((item) => `<li>${item}</li>`).join("");
-      const stops = day.stops
-        .map(
-          ([label, query]) =>
-            `<button class="map-button" type="button" data-title="${label}" data-query="${query}">${label}</button>`
-        )
-        .join("");
+      const dateMatch = day.title.match(/^\d+\/\d+（[^）]+）/);
+      const date = dateMatch ? dateMatch[0].trim() : day.title;
+      const heading = `${date} ${day.headline}`.trim();
+      const overview = day.overview.map((item) => `<li>${linkStops(item, day.stops)}</li>`).join("");
+      const notes = day.notes.map((item) => `<li>${linkStops(item, day.stops)}</li>`).join("");
 
       return `
         <article class="day-card">
           <div class="day-summary">
-            <span class="date-pill">${date}</span>
-            <div>
-              <h3>${title}</h3>
-              <div class="stop-row">${stops}</div>
-            </div>
+            <h3>${heading}</h3>
           </div>
           <div class="day-body">
-            <ul>${summary}</ul>
+            <section class="detail-block">
+              <h4>行程概要</h4>
+              <ul>${overview}</ul>
+            </section>
+            ${notes ? `<section class="detail-block note-block"><h4>注意事項</h4><ul>${notes}</ul></section>` : ""}
           </div>
         </article>
       `;
     })
     .join("");
 
-  els.itineraryList.querySelectorAll(".map-button").forEach((button) => {
+  els.itineraryList.querySelectorAll(".inline-map-link").forEach((button) => {
     button.addEventListener("click", () => {
       focusMap(button.dataset.title, button.dataset.query, "行程安排中的地點");
     });
@@ -190,14 +293,133 @@ function renderItinerary(days) {
 }
 
 function renderFilters() {
+  const cities = ["全部", ...new Set(state.places.map((place) => place.city).sort((a, b) => citySortValue(a) - citySortValue(b) || a.localeCompare(b, "zh-Hant")))];
+  els.cityFilters.innerHTML = cities
+    .map((city) => {
+      const active = city === "全部" ? state.cities.length === 0 : state.cities.includes(city);
+      return `<button class="filter ${active ? "is-active" : ""}" type="button" data-city="${city}">${city}</button>`;
+    })
+    .join("");
+
+  els.cityFilters.querySelectorAll(".filter").forEach((button) => {
+    button.addEventListener("click", () => {
+      const { city } = button.dataset;
+      if (city === "全部") {
+        state.cities = [];
+        state.districts = [];
+      } else if (state.cities.includes(city)) {
+        state.cities = state.cities.filter((item) => item !== city);
+      } else {
+        state.cities = [...state.cities, city];
+      }
+      if (state.cities.length === 0) {
+        state.districts = [];
+      }
+      const validDistricts = new Set(
+        state.places
+          .filter((place) => state.cities.length === 0 || state.cities.includes(place.city))
+          .map((place) => place.district)
+      );
+      state.districts = state.districts.filter((district) => validDistricts.has(district));
+      renderFilters();
+      renderPlaces();
+    });
+  });
+
   const filters = ["全部", ...CATEGORY_ORDER];
   els.categoryFilters.innerHTML = filters
-    .map((category) => `<button class="filter ${category === state.category ? "is-active" : ""}" type="button" data-category="${category}">${category}</button>`)
+    .map((category) => {
+      const active = category === "全部" ? state.categories.length === 0 : state.categories.includes(category);
+      return `<button class="filter ${active ? "is-active" : ""}" type="button" data-category="${category}">${category}</button>`;
+    })
     .join("");
 
   els.categoryFilters.querySelectorAll(".filter").forEach((button) => {
     button.addEventListener("click", () => {
-      state.category = button.dataset.category;
+      const { category } = button.dataset;
+      if (category === "全部") {
+        state.categories = [];
+        state.types = [];
+      } else if (state.categories.includes(category)) {
+        state.categories = state.categories.filter((item) => item !== category);
+      } else {
+        state.categories = [...state.categories, category];
+      }
+      const validTypes = new Set(
+        state.places
+          .filter((place) => state.categories.length === 0 || state.categories.includes(place.category))
+          .map((place) => place.displayType)
+      );
+      state.types = state.types.filter((type) => validTypes.has(type));
+      renderFilters();
+      renderPlaces();
+    });
+  });
+
+  const typeSource =
+    state.categories.length > 0
+      ? state.places.filter((place) => state.categories.includes(place.category))
+      : [];
+  const types = [
+    "全部",
+    ...new Set(
+      typeSource
+        .map((place) => place.displayType)
+        .filter((type) => type && type !== "待補")
+        .sort((a, b) => typeSortValue(a) - typeSortValue(b) || a.localeCompare(b, "zh-Hant"))
+    )
+  ];
+
+  els.typeFilters.innerHTML =
+    state.categories.length === 0
+      ? ""
+      : types
+          .map((type) => {
+            const active = type === "全部" ? state.types.length === 0 : state.types.includes(type);
+            return `<button class="filter sub-filter ${active ? "is-active" : ""}" type="button" data-type="${type}">${type}</button>`;
+          })
+          .join("");
+
+  els.typeFilters.querySelectorAll(".filter").forEach((button) => {
+    button.addEventListener("click", () => {
+      const { type } = button.dataset;
+      if (type === "全部") {
+        state.types = [];
+      } else if (state.types.includes(type)) {
+        state.types = state.types.filter((item) => item !== type);
+      } else {
+        state.types = [...state.types, type];
+      }
+      renderFilters();
+      renderPlaces();
+    });
+  });
+
+  const districtSource =
+    state.cities.length > 0
+      ? state.places.filter((place) => state.cities.includes(place.city))
+      : [];
+  const districts = ["全部", ...new Set(districtSource.map((place) => place.district).sort((a, b) => districtSortValue(a) - districtSortValue(b) || a.localeCompare(b, "zh-Hant")))];
+  els.districtFilters.innerHTML =
+    state.cities.length === 0
+      ? ""
+      : districts
+          .map((district) => {
+            const active = district === "全部" ? state.districts.length === 0 : state.districts.includes(district);
+            return `<button class="filter ${active ? "is-active" : ""}" type="button" data-district="${district}">${formatDistrictLabel(district)}</button>`;
+          })
+          .join("");
+
+  els.districtFilters.querySelectorAll(".filter").forEach((button) => {
+    button.addEventListener("click", () => {
+      const { district } = button.dataset;
+      if (district === "全部") {
+        state.districts = [];
+      } else if (state.districts.includes(district)) {
+        state.districts = state.districts.filter((item) => item !== district);
+      } else {
+        state.districts = [...state.districts, district];
+      }
       renderFilters();
       renderPlaces();
     });
@@ -207,9 +429,13 @@ function renderFilters() {
 function renderPlaces() {
   const needle = state.search.trim().toLowerCase();
   const places = state.places.filter((place) => {
-    const matchCategory = state.category === "全部" || place.category === state.category;
-    const haystack = `${place.name} ${place.type} ${place.note}`.toLowerCase();
-    return matchCategory && (!needle || haystack.includes(needle));
+    const matchCity = state.cities.length === 0 || state.cities.includes(place.city);
+    const matchCategory = state.categories.length === 0 || state.categories.includes(place.category);
+    const matchType = state.types.length === 0 || state.types.includes(place.displayType);
+    const matchDistrict = state.districts.length === 0 || state.districts.includes(place.district);
+    const haystack = `${place.name} ${place.city} ${place.type} ${place.displayType} ${place.displayDistrict} ${place.note} ${place.summary}`.toLowerCase();
+    const matchSearch = !needle || haystack.includes(needle);
+    return matchCity && matchCategory && matchType && matchDistrict && matchSearch;
   });
 
   if (!places.length) {
@@ -220,27 +446,32 @@ function renderPlaces() {
   els.placeList.innerHTML = places
     .map(
       (place, index) => `
-        <article class="place-card">
+        <article class="place-card" tabindex="0" role="button" data-place-index="${index}">
           <h3>${place.name}</h3>
+          <p class="district-label">${place.city} / ${place.displayDistrict}</p>
           <div class="meta-row">
             <span class="tag">${place.category}</span>
-            <span class="tag">${place.type}</span>
-            <span class="tag">${place.price}</span>
+            ${place.displayType !== "待補" ? `<span class="tag">${place.displayType}</span>` : ""}
+            ${place.price !== "待補" ? `<span class="tag">${place.price}</span>` : ""}
           </div>
-          <p class="note">${place.note || "尚未補地址或備註"}</p>
-          <div class="place-actions">
-            <button class="map-button" type="button" data-place-index="${index}">看地圖</button>
-            <a class="text-link" href="${googleSearchUrl(place.query)}" target="_blank" rel="noreferrer">Google Maps</a>
-          </div>
+          ${place.summary ? `<p class="place-summary">${place.summary}</p>` : ""}
         </article>
       `
     )
     .join("");
 
-  els.placeList.querySelectorAll("[data-place-index]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const place = places[Number(button.dataset.placeIndex)];
-      focusMap(place.name, place.query, `${place.category} / ${place.type}`);
+  els.placeList.querySelectorAll("[data-place-index]").forEach((card) => {
+    const updateMap = () => {
+      const place = places[Number(card.dataset.placeIndex)];
+      const subtitle = place.displayType !== "待補" ? `${place.category} / ${place.displayType}` : place.category;
+      focusMap(place.name, place.query, subtitle);
+    };
+    card.addEventListener("click", updateMap);
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        updateMap();
+      }
     });
   });
 }
@@ -265,11 +496,12 @@ async function init() {
   });
 
   const [itineraryMd, categoriesMd] = await Promise.all([
-    fetchTextFile(["itinerary.txt", "itinerary.md"]),
-    fetchTextFile(["google_maps_categories.txt", "google_maps_categories.md"])
+    fetchTextFile(["itinerary.md"]),
+    fetchTextFile(["google_maps_categories.md"])
   ]);
 
   state.places = parsePlaces(categoriesMd);
+  state.places = state.places.map((place) => ({ ...place, summary: createPlaceSummary(place) }));
   renderItinerary(parseItinerary(itineraryMd));
   renderFilters();
   renderPlaces();
@@ -277,7 +509,7 @@ async function init() {
 
 async function fetchTextFile(candidates) {
   for (const path of candidates) {
-    const response = await fetch(path);
+    const response = await fetch(`${path}?v=${DATA_VERSION}`);
     if (response.ok) {
       return response.text();
     }

@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>2026 米蘭巴黎行程分享</title>
+    <link rel="icon" href="favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -30,7 +32,7 @@
           <div class="section-heading">
             <div>
               <p class="eyebrow">Itinerary</p>
-              <h2 id="itineraryTitle">逐日行程</h2>
+              <h2 id="itineraryTitle">行程安排</h2>
             </div>
             <p class="hint">點擊每一天的地點，可在旁邊地圖查看位置。</p>
           </div>
@@ -43,14 +45,23 @@
               <p class="eyebrow">Saved Places</p>
               <h2 id="placesTitle">儲存地點</h2>
             </div>
-            <p class="hint">分類來自 Google Maps 清單整理檔，價格欄保留原格式。</p>
+            <p class="hint">分類來自 Google Maps 清單整理檔。</p>
           </div>
           <div class="tools">
             <label class="search-box">
               <span>搜尋</span>
               <input id="placeSearch" type="search" placeholder="輸入店名、類型或地址" />
             </label>
-            <div id="categoryFilters" class="filter-row" aria-label="地點分類"></div>
+            <div class="filter-group location-filters">
+              <p class="filter-label">城市／區域</p>
+              <div id="cityFilters" class="filter-row city-row" aria-label="城市"></div>
+              <div id="districtFilters" class="filter-row district-row" aria-label="區域"></div>
+            </div>
+            <div class="filter-group category-filter-group">
+              <p class="filter-label">分類</p>
+              <div id="categoryFilters" class="filter-row" aria-label="地點分類"></div>
+              <div id="typeFilters" class="filter-row type-row" aria-label="小類篩選"></div>
+            </div>
           </div>
           <div id="placeList" class="place-grid"></div>
         </section>
@@ -61,7 +72,7 @@
           <div class="map-meta">
             <p class="eyebrow">Map Reference</p>
             <h2 id="mapTitle">Paris</h2>
-            <p id="mapSubtitle">選擇行程或儲存地點後，這裡會更新 Google Map。</p>
+            <p id="mapSubtitle">點擊行程或儲存地點後，這裡會顯示對應位置。</p>
           </div>
           <iframe
             id="mapFrame"
@@ -75,6 +86,7 @@
       </aside>
     </main>
 
-    <script src="app.js"></script>
+    <script src="data.js?v=20260711p"></script>
+    <script src="app.js?v=20260711p"></script>
   </body>
 </html>
