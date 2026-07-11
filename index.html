@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>2026 米蘭巴黎行程分享</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,650&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">2026 / 08 / 08 - 08 / 18</p>
+        <h1>米蘭與巴黎行程分享</h1>
+      </div>
+      <nav class="tabs" aria-label="主要內容切換">
+        <button class="tab is-active" type="button" data-view="itinerary">行程安排</button>
+        <button class="tab" type="button" data-view="places">儲存地點</button>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section class="content-panel">
+        <section id="itineraryView" class="view is-active" aria-labelledby="itineraryTitle">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Itinerary</p>
+              <h2 id="itineraryTitle">逐日行程</h2>
+            </div>
+            <p class="hint">點擊每一天的地點，可在旁邊地圖查看位置。</p>
+          </div>
+          <div id="itineraryList" class="day-list"></div>
+        </section>
+
+        <section id="placesView" class="view" aria-labelledby="placesTitle">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Saved Places</p>
+              <h2 id="placesTitle">儲存地點</h2>
+            </div>
+            <p class="hint">分類來自 Google Maps 清單整理檔，價格欄保留原格式。</p>
+          </div>
+          <div class="tools">
+            <label class="search-box">
+              <span>搜尋</span>
+              <input id="placeSearch" type="search" placeholder="輸入店名、類型或地址" />
+            </label>
+            <div id="categoryFilters" class="filter-row" aria-label="地點分類"></div>
+          </div>
+          <div id="placeList" class="place-grid"></div>
+        </section>
+      </section>
+
+      <aside class="map-panel" aria-label="地圖參考">
+        <div class="map-card">
+          <div class="map-meta">
+            <p class="eyebrow">Map Reference</p>
+            <h2 id="mapTitle">Paris</h2>
+            <p id="mapSubtitle">選擇行程或儲存地點後，這裡會更新 Google Map。</p>
+          </div>
+          <iframe
+            id="mapFrame"
+            title="Google Map reference"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            src="https://www.google.com/maps?q=Paris%2C%20France&output=embed"
+          ></iframe>
+          <a id="mapExternalLink" class="map-link" href="https://www.google.com/maps/search/?api=1&query=Paris%2C%20France" target="_blank" rel="noreferrer">在 Google Maps 開啟</a>
+        </div>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
